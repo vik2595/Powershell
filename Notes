@@ -1,0 +1,166 @@
+322284 EB Jordan Banks 5 Shirts Finished Order
+322315 EB Ivan Bilincic Shirt Finished Order
+322354 SF Lawrence Krimker Shirt Jan 31 Finished
+GBT 421992 Jesse Goldman Suit Finished Order  Ship Date 18 Feb or early
+GBT 322227 Chris Hadfield 5 shirts Finished Order
+417496.2 BD Darryl Green Brown Denim Finished
+GBT 422477 Andrew Wilson 3pc Suit Finished Order
+GBT 622232.3 Fatima Khalfan Stormcoat Finished Order
+GBT 422284.2 Jordan Banks Jacket Finished Order
+GBT 422470-2 Robert Boyce 3Pcs Suit Finished Order Ship Date 20 March
+
+https://regex101.com/
+EB REGEX - ([0-9]+?)\s([A-Z]+)\s(\w+)\s(\w+)\s(\w.*)
+Common RegEx - (\w+?)\s(\w+)\s(\w+)\s(\w+)\s(\w.*)
+
+src = adam
+dest = client files //matches with folder - param
+
+Get number of files 
+For Loop for each file
+	Do part of file name
+	Get 3rd and 4th element
+	Serach for folder with 4th ", " 3rd param
+	If found then paste it
+	If not found then create a folder.
+
+$DefaultFiles =  Get-ChildItem | Where-Object {$_.Name -like "*SF*"}
+ForEach($File in $DefaultFiles) 
+{
+    $newname = ([String]$File).Replace("Default","VOD")
+    Rename-item -Path $File $newname
+}
+
+Solution 1
+
+$SourceFolder = "G:\queries\"
+$targetFolder = "G:\queries\"
+
+# Find all files matching *.sql in the folder specified
+Get-ChildItem -Path $SourceFolder -Filter *.sql | ForEach-Object {
+
+    # Combine the source filename and target directory
+    # The source filename has all instances of _ replaced with \
+    # Cast the resulting string to a FileInfo object to take advantage of extra methods
+    [System.IO.FileInfo]$destination = (Join-Path -Path $targetFolder -ChildPath $_.Name.replace("_","\"))
+
+    # Create the directory if it doesn't already exits
+    if (!(Test-Path) $destination.Directory.FullName)
+    { 
+        New-item -Path $destination.Directory.FullName -ItemType Directory 
+    }
+
+    # Copy the source to the target directory
+    copy-item -Path $_.FullName -Destination $Destination.FullName 
+}
+
+
+Solution 2  Good
+
+$SourceFolder = "D:\queries\"
+$targetFolder = "G:\queries\"
+$numFiles = (Get-ChildItem -Path $SourceFolder -Filter *.TXT).Count
+$i=0
+
+clear-host;
+Write-Host 'This script will copy ' $numFiles ' files from ' $SourceFolder ' to ' $targetFolder
+Read-host -prompt 'Press enter to start copying the files'
+
+Get-ChildItem -Path $SourceFolder -Filter *.TXT | %{ 
+    [System.IO.FileInfo]$destination = (Join-Path -Path $targetFolder -ChildPath $_.Name.replace("_","\"))
+
+   if(!(Test-Path -Path $destination.Directory )){
+    New-item -Path $destination.Directory.FullName -ItemType Directory 
+    }
+    [int]$percent = $i / $numFiles * 100
+
+    copy-item -Path $_.FullName -Destination $Destination.FullName
+    Write-Progress -Activity "Copying ... ($percent %)" -status $_  -PercentComplete $percent -verbose
+    $i++
+}
+Write-Host 'Total number of files read from directory '$SourceFolder ' is ' $numFiles
+Write-Host 'Total number of files that was copied to '$targetFolder ' is ' $i
+Read-host -prompt "Press enter to complete..."
+clear-host;
+
+Solutin 3  Good
+
+# 1. Get a list of files in the d:\queries folder
+$FileList = Get-ChildItem -Path d:\queries;
+
+# 2. Parse file names, create folder structure, and move files
+foreach ($File in $FileList) {
+    $File.Name -match '(?<folder>.*?)(?:_)(?<subfolder>\w{2})(?:_)(?<filename>.*)';
+    if ($matches) {
+        $Destination = 'd:\queries\{0}\{1}\{2}' -f $matches.folder, $matches.subfolder, $matches.filename;
+        mkdir -Path (Split-Path -Path $Destination -Parent) -ErrorAction SilentlyContinue;
+        Move-Item -Path $File.FullName -Destination $Destination -WhatIf;
+    }
+    $matches = $null
+}
+
+Solutin 4
+
+############################################################
+#Project : Move files to another directory by File name filter
+#Developer : Thiyagu S (dotnet-helpers.com)
+#Tools : PowerShell 5.1.15063.1155 
+#E-Mail : mail2thiyaguji@gmail.com 
+############################################################
+#set Source and Destination folder location
+$srcpath = "C:\Powershelltest\Source"
+$dstpath = "C:\Powershelltest\Destination"
+#Set the files name which need to move to destination folder
+$filterLists = @("70022333","70022867")
+ 
+#Get all the child file list with source folder
+$fileList = Get-ChildItem -Path $srcpath -Force -Recurse
+#loop the source folder files to find the match
+foreach ($file in $fileList)
+{
+#checking the match with filterlist
+foreach($filelist in $filterLists)
+{
+#$key = $file.BaseName.Substring(0,8)
+#Spliting value before "-" for matching with filterlists value
+$splitFileName = $file.BaseName.Substring(0, $file.BaseName.IndexOf('-'))
+ 
+if ($splitFileName -in $filelist)
+{
+$fileName = $file.Name
+ 
+Move-Item -Path $($file.FullName) -Destination $dstpath
+}
+}
+}
+
+
+Solution 5
+
+# Folder where Files and Folders are located
+$Source = "C:\Users\acct\Desktop\Vikas Data\Test"
+$Dest = "C:\Users\acct\Desktop\Vikas Data\Test\Client Files"
+
+# Getting Folders and Files
+$Folders = gci $Source -OutVariable Files | ? { $_.PSisContainer }
+
+# Loop over all Files with *.png extension
+$Files | ? { $_.Extension -eq '.pdf' } | % {
+
+    # Split FileName to get the number (like 1001)
+    $num = ($_.Name -split "_")[1]
+
+    # Get FolderName by reading out foldername (without '') and compare it to number
+    $MoveTo = $Folders | ? { $_.Name.substring(1,($_.Name.length -1)) -eq $num }
+
+    # If a folder was found, move file there. else print error
+    if ($MoveTo)
+    {
+        Move-Item $_.FullName $MoveTo -Force
+        Write-Host "Copied File $($_.Name) to $MoveTo"
+    }
+    else 
+    { 
+        Write-Host "Did not find folder x$($num) in $TopFolder" 
+    }
+}
